@@ -16,7 +16,7 @@ class ViewController: NSViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-
+        
         if let view = self.skView {
             // Load the SKScene from 'GameScene.sks'
             if let scene = SKScene(fileNamed: "GameScene") {
@@ -32,6 +32,11 @@ class ViewController: NSViewController {
             view.showsFPS = true
             view.showsNodeCount = true
         }
+    }
+    
+    override func viewDidAppear() {
+        super.viewDidAppear()
+        self.view.window?.styleMask.remove(.resizable)
     }
 }
 

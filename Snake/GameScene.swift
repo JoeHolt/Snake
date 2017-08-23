@@ -11,13 +11,14 @@ import GameplayKit
 
 class GameScene: SKScene {
     
-    private let gridSize = 20           //Size of snake grid
-    private let frameUpdate = 15        //How often the frame will update(x/60)
+    private let gridSize = 10           //Size of snake grid
+    private let frameUpdate = 15        //How often the frame will update(x/60), decrease to increase snake speed
     private var mainView: SKView!       //Scenekit view
     private var snake: Snake!           //Snake
     private var shouldExtendSnake: Bool = false //Tell wheather or not to add food to snake
     private var currentFrame = 0        //Counts what frame in order to tell when to update
     private var currentDirection: CGPoint = CGPoint(x: 0, y: 0  ) //Directoin snake will go
+    private var foodPoint: CGPoint!     //Point of current food
     
     override func didMove(to view: SKView) {
         self.mainView = view
@@ -34,20 +35,23 @@ class GameScene: SKScene {
             var newPoint = snake.headPoistion
             newPoint?.x += currentDirection.x
             newPoint?.y += currentDirection.y
-            //Check for death
-            //Edges
+            //Death: Edges
             let max = gridSize/2 + 2
             if Int(snake.headPoistion!.x) > max || Int(snake.headPoistion!.x) < -max || Int(snake.headPoistion!.y) > max || Int(snake.headPoistion!.y) < -max {
                 //Snake out of bounds
                 reset()
                 return
             }
-            //Run into self
+            //Death: Run into self
             for point in snake.tail {
                 if point == newPoint && currentDirection != CGPoint(x: 0, y: 0) {
                     reset()
-                    break
+                    return
                 }
+            }
+            //Check if ate food
+            if newPoint == foodPoint {
+                didEatFood()
             }
             //Remove last node and check if snake should be made bigger
             if shouldExtendSnake == false {
@@ -80,7 +84,13 @@ class GameScene: SKScene {
             case "d":
                 currentDirection = CGPoint(x: 1, y: 0)
             case "z":
-                didEatFood()
+                shouldExtendSnake = true
+            case " ":
+                if self.scene?.view?.isPaused == true {
+                    self.scene?.view?.isPaused = false
+                } else {
+                    self.scene?.view?.isPaused = true
+                }
             default:
                 break
             }
@@ -101,11 +111,19 @@ class GameScene: SKScene {
     private func spawnFood() {
         let randX = Int(arc4random_uniform(UInt32(gridSize))) - Int(gridSize/2)
         let randY = Int(arc4random_uniform(UInt32(gridSize))) - Int(gridSize/2)
+        foodPoint = CGPoint(x: randX, y: randY)
+        for point in snake.tail {
+            if point == foodPoint {
+                spawnFood()
+                return
+            }
+        }
         drawSquare(x: randX, y: randY, color: SKColor.purple)
     }
     
     private func didEatFood() {
         shouldExtendSnake = true
+        spawnFood()
     }
     
     private func drawSquare(x: Int, y: Int, color: SKColor = SKColor.white) {
