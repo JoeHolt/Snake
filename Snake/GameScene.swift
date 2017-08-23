@@ -11,82 +11,94 @@ import GameplayKit
 
 class GameScene: SKScene {
     
-    private var label : SKLabelNode?
-    private var spinnyNode : SKShapeNode?
+    private let gridSize = 20           //Size of snake grid
+    private let frameUpdate = 15        //How often the frame will update(x/60)
+    private var mainView: SKView!       //Scenekit view
+    private var snake: Snake!           //Snake
+    private var doAddFood: Bool = false //Tell wheather or not to add food to snake
+    private var currentFrame = 0        //Counts what frame in order to tell when to update
+    private var currentDirection: CGPoint = CGPoint(x: 0, y: 0  ) //Directoin snake will go
     
     override func didMove(to view: SKView) {
-        
-        // Get label node from scene and store it for use later
-        self.label = self.childNode(withName: "//helloLabel") as? SKLabelNode
-        if let label = self.label {
-            label.alpha = 0.0
-            label.run(SKAction.fadeIn(withDuration: 2.0))
+        self.mainView = view
+        backgroundColor = SKColor.black
+        view.showsFPS = true
+        snake = Snake(initialPoint: CGPoint(x: 0, y: 0))
+        spawnFood()
+    }
+    
+    override func update(_ currentTime: TimeInterval) {
+        currentFrame += 1
+        if currentFrame == frameUpdate {
+            // Change location
+            var newPoint = snake.headPoistion
+            newPoint?.x += currentDirection.x
+            newPoint?.y += currentDirection.y
+            //Remove last node
+            if doAddFood == false {
+                removeSquare(x: Int((snake.tail.last?.x)!), y: Int((snake.tail.last?.y)!))
+                snake.tail.removeLast()
+            } else {
+                doAddFood = false
+            }
+            //Draw new square at new location
+            snake.headPoistion = newPoint
+            drawSquare(x: Int(snake.headPoistion.x), y: Int(snake.headPoistion.y))
+            currentFrame = 0
         }
-        
-        // Create shape node to use during mouse interaction
-        let w = (self.size.width + self.size.height) * 0.05
-        self.spinnyNode = SKShapeNode.init(rectOf: CGSize.init(width: w, height: w), cornerRadius: w * 0.3)
-        
-        if let spinnyNode = self.spinnyNode {
-            spinnyNode.lineWidth = 2.5
-            
-            spinnyNode.run(SKAction.repeatForever(SKAction.rotate(byAngle: CGFloat(Double.pi), duration: 1)))
-            spinnyNode.run(SKAction.sequence([SKAction.wait(forDuration: 0.5),
-                                              SKAction.fadeOut(withDuration: 0.5),
-                                              SKAction.removeFromParent()]))
-        }
-    }
-    
-    
-    func touchDown(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.green
-            self.addChild(n)
-        }
-    }
-    
-    func touchMoved(toPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.blue
-            self.addChild(n)
-        }
-    }
-    
-    func touchUp(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.red
-            self.addChild(n)
-        }
-    }
-    
-    override func mouseDown(with event: NSEvent) {
-        self.touchDown(atPoint: event.location(in: self))
-    }
-    
-    override func mouseDragged(with event: NSEvent) {
-        self.touchMoved(toPoint: event.location(in: self))
-    }
-    
-    override func mouseUp(with event: NSEvent) {
-        self.touchUp(atPoint: event.location(in: self))
     }
     
     override func keyDown(with event: NSEvent) {
-        switch event.keyCode {
-        case 0x31:
-            if let label = self.label {
-                label.run(SKAction.init(named: "Pulse")!, withKey: "fadeInOut")
+        handleKeyEvent(event: event)
+    }
+    
+    private func handleKeyEvent(event: NSEvent) {
+        let charachters = event.characters
+        for char in charachters! {
+            switch char {
+            case "w":
+                currentDirection = CGPoint(x: 0, y: 1)
+            case "a":
+                currentDirection = CGPoint(x: -1, y: 0)
+            case "s":
+                currentDirection = CGPoint(x: 0, y: -1)
+            case "d":
+                currentDirection = CGPoint(x: 1, y: 0)
+            case "z":
+                didEatFood()
+            default:
+                break
             }
-        default:
-            print("keyDown: \(event.characters!) keyCode: \(event.keyCode)")
         }
     }
     
+    private func spawnFood() {
+        let randX = Int(arc4random_uniform(UInt32(gridSize))) - Int(gridSize/2)
+        let randY = Int(arc4random_uniform(UInt32(gridSize))) - Int(gridSize/2)
+        drawSquare(x: randX, y: randY, color: SKColor.purple)
+    }
     
-    override func update(_ currentTime: TimeInterval) {
-        // Called before each frame is rendered
+    private func didEatFood() {
+        doAddFood = true
+    }
+    
+    private func drawSquare(x: Int, y: Int, color: SKColor = SKColor.white) {
+        let height = mainView.frame.size.height/CGFloat(gridSize)
+        let xDim = (mainView.frame.size.width/CGFloat(gridSize)) * CGFloat(x)
+        let yDim = (mainView.frame.size.height/CGFloat(gridSize)) * CGFloat(y)
+        let square = SKSpriteNode()
+        square.position = CGPoint(x: xDim, y: yDim)
+        square.size = CGSize(width: height, height: height - 2)
+        square.color = color
+        addChild(square)
+    }
+    
+    private func removeSquare(x: Int, y: Int) {
+        let xDim = (mainView.frame.size.width/CGFloat(gridSize)) * CGFloat(x)
+        let yDim = (mainView.frame.size.height/CGFloat(gridSize)) * CGFloat(y)
+        let nodesAtPoint = nodes(at: CGPoint(x: xDim, y: yDim))
+        for node in nodesAtPoint {
+            node.removeFromParent()
+        }
     }
 }
