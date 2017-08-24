@@ -11,7 +11,7 @@ import GameplayKit
 
 class GameScene: SKScene {
     
-    private let gridSize = 10           //Size of snake grid
+    private let gridSize = 20           //Size of snake grid
     private let frameUpdate = 15        //How often the frame will update(x/60), decrease to increase snake speed
     private var mainView: SKView!       //Scenekit view
     private var snake: Snake!           //Snake
